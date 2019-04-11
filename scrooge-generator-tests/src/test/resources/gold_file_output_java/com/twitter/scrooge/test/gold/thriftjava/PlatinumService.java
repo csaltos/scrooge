@@ -210,12 +210,6 @@ public class PlatinumService {
         __prot__.writeMessageBegin(new TMessage("moreCoolThings", TMessageType.CALL, 0));
         moreCoolThings_args __args__ = new moreCoolThings_args();
         __args__.setRequest(request);
-        __args__.write(__prot__);
-        __prot__.writeMessageEnd();
-
-
-        byte[] __buffer__ = Arrays.copyOf(__memoryTransport__.getArray(), __memoryTransport__.length());
-        final ThriftClientRequest __request__ = new ThriftClientRequest(__buffer__, false);
 
         Function<byte[], com.twitter.util.Try<Integer>> replyDeserializer =
           new Function<byte[], com.twitter.util.Try<Integer>>() {
@@ -229,13 +223,21 @@ public class PlatinumService {
               }
             }
           };
-        ClientDeserializeCtx serdeCtx = new ClientDeserializeCtx<Integer>(__args__, replyDeserializer);
 
+        ClientDeserializeCtx<Integer> serdeCtx = new ClientDeserializeCtx<>(__args__, replyDeserializer);
         return com.twitter.finagle.context.Contexts.local().let(
           ClientDeserializeCtx.Key(),
           serdeCtx,
-          new com.twitter.util.Function0<Future<Integer>>() {
-            public Future<Integer> apply() {
+          new com.twitter.util.ExceptionalFunction0<Future<Integer>>() {
+            public Future<Integer> applyE() throws TException {
+              serdeCtx.rpcName("moreCoolThings");
+              long start = System.nanoTime();
+              __args__.write(__prot__);
+              __prot__.writeMessageEnd();
+              serdeCtx.serializationTime(System.nanoTime() - start);
+
+              byte[] __buffer__ = Arrays.copyOf(__memoryTransport__.getArray(), __memoryTransport__.length());
+              final ThriftClientRequest __request__ = new ThriftClientRequest(__buffer__, false);
 
               Future<byte[]> __done__ = service.apply(__request__);
               return __done__.flatMap(new Function<byte[], Future<Integer>>() {
@@ -396,8 +398,10 @@ public class PlatinumService {
             moreCoolThings_args args = new moreCoolThings_args();
 
             try {
+              long start = System.nanoTime();
               args.read(iprot);
               iprot.readMessageEnd();
+              com.twitter.finagle.tracing.Trace.recordBinary("srv/request_deserialization_ns", System.nanoTime() - start);
             } catch (Exception e) {
               return Future.exception(e);
             }
@@ -504,12 +508,14 @@ public class PlatinumService {
 
     private Future<byte[]> reply(String name, Integer seqid, TBase result) {
       try {
+        long start = System.nanoTime();
         TReusableMemoryTransport memoryBuffer = tlReusableBuffer.get();
         TProtocol oprot = protocolFactory.getProtocol(memoryBuffer);
 
         oprot.writeMessageBegin(new TMessage(name, TMessageType.REPLY, seqid));
         result.write(oprot);
         oprot.writeMessageEnd();
+        com.twitter.finagle.tracing.Trace.recordBinary("srv/response_serialization_ns", System.nanoTime() - start);
 
         return Future.value(Arrays.copyOf(memoryBuffer.getArray(), memoryBuffer.length()));
       } catch (Exception e) {

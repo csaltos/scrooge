@@ -6,8 +6,8 @@ import com.twitter.finagle.{
   service => ctfs,
   Filter => finagle$Filter,
   Service => finagle$Service,
-  thrift => _,
-  _
+  thrift => _{{#hasThriftFunctions}},
+  _{{/hasThriftFunctions}}
 }
 import com.twitter.finagle.stats.{Counter, StatsReceiver}
 import com.twitter.finagle.thrift.{
@@ -15,23 +15,22 @@ import com.twitter.finagle.thrift.{
   RichClientParam,
   RichServerParam,
   ServerToReqRep,
-  ThriftClientRequest,
-  ThriftServiceIface,
-  ToThriftService
+  ThriftClientRequest{{#withFinagle}}{{^parent}}{{#generateServiceIface}},
+  ToThriftService{{/generateServiceIface}}{{/parent}}{{/withFinagle}}
 }
 import com.twitter.util.{Future, Return, Throw, Throwables}
-{{/withFinagle}}
 import com.twitter.io.Buf
-import java.nio.ByteBuffer
-import java.util.Arrays
+{{/withFinagle}}
 import org.apache.thrift.protocol._
+{{#withFinagle}}
 import org.apache.thrift.TApplicationException
+{{/withFinagle}}
+{{^public}}
+{{#hasThriftFunctions}}
+import scala.collection.mutable.Builder
+{{/hasThriftFunctions}}
+{{/public}}
 import scala.collection.immutable.{Map => immutable$Map, Set => immutable$Set}
-import scala.collection.mutable.{
-  Builder,
-  ArrayBuffer => mutable$ArrayBuffer, Buffer => mutable$Buffer,
-  HashMap => mutable$HashMap, HashSet => mutable$HashSet}
-import scala.collection.{Map, Set}
 import scala.language.higherKinds
 
 {{docstring}}
@@ -79,7 +78,7 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
 {{#generateServiceIface}}
   trait ServicePerEndpoint
     extends {{#parent}}{{parent}}.ServicePerEndpoint{{/parent}}{{^parent}}ToThriftService{{/parent}}
-    with _root_.com.twitter.finagle.thrift.ThriftServiceIface.Filterable[ServicePerEndpoint] {
+    with _root_.com.twitter.finagle.thrift.service.Filterable[ServicePerEndpoint] {
 {{#ownFunctions}}
     def {{dedupedFuncName}} : _root_.com.twitter.finagle.Service[self.{{funcObjectName}}.Args, self.{{funcObjectName}}.SuccessType]
 {{/ownFunctions}}
@@ -255,7 +254,7 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
 {{/inheritedFunctions|,}}
   ) extends {{#parent}}{{parent}}.BaseServiceIface
     with {{/parent}}BaseServiceIface
-    with com.twitter.finagle.thrift.ThriftServiceIface.Filterable[ServiceIface] {
+    with _root_.com.twitter.finagle.thrift.service.Filterable[ServiceIface] {
 
     /**
      * Prepends the given type-agnostic `Filter` to all of the `Services`
@@ -277,7 +276,11 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
       ): ServicePerEndpoint =
         ServicePerEndpoint(
 {{#inheritedFunctions}}
-          {{dedupedFuncName}} = ThriftServiceIface({{ParentServiceName}}.{{funcObjectName}}, thriftService, clientParam)
+          {{dedupedFuncName}} = _root_.com.twitter.finagle.thrift.service.ThriftServicePerEndpoint(
+            {{ParentServiceName}}.{{funcObjectName}},
+            thriftService,
+            clientParam
+          )
 {{/inheritedFunctions|,}}
         )
   }
@@ -304,7 +307,11 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
       ): ServiceIface =
         ServiceIface(
 {{#inheritedFunctions}}
-          {{dedupedFuncName}} = ThriftServiceIface({{ParentServiceName}}.{{funcObjectName}}, binaryService, clientParam)
+          {{dedupedFuncName}} = _root_.com.twitter.finagle.thrift.service.ThriftServicePerEndpoint(
+            {{ParentServiceName}}.{{funcObjectName}},
+            binaryService,
+            clientParam
+          )
 {{/inheritedFunctions|,}}
         )
   }
@@ -364,7 +371,6 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
         f(request)
       }
 
-    private[this] val toResult = (res: SuccessType) => Result({{^isVoid}}Some(res){{/isVoid}})
 {{/withFinagle}}
 {{^withFinagle}}
     type FunctionType = Nothing
@@ -382,16 +388,16 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
 
     val name: String = "{{originalFuncName}}"
     val serviceName: String = "{{ServiceName}}"
-    val argsCodec = Args
-    val responseCodec = Result
+    val argsCodec: Args.type = Args
+    val responseCodec: Result.type = Result
     val oneway: Boolean = {{is_oneway}}
   }
 
   // Compatibility aliases.
-  val {{funcName}}$args = {{funcObjectName}}.Args
+  val {{funcName}}$args: {{funcObjectName}}.Args.type = {{funcObjectName}}.Args
   type {{funcName}}$args = {{funcObjectName}}.Args
 
-  val {{funcName}}$result = {{funcObjectName}}.Result
+  val {{funcName}}$result: {{funcObjectName}}.Result.type = {{funcObjectName}}.Result
   type {{funcName}}$result = {{funcObjectName}}.Result
 
 {{/thriftFunctions}}
@@ -572,7 +578,7 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
     private[this] def perEndpointStats: Boolean = serverParam.perEndpointStats && !stats.isNull
     private[this] def maxReusableBufferSize: Int = serverParam.maxThriftBufferSize
 
-    private[this] val tlReusableBuffer = TReusableBuffer(maxThriftBufferSize = maxReusableBufferSize)
+    private[this] val tlReusableBuffer: TReusableBuffer = TReusableBuffer(maxThriftBufferSize = maxReusableBufferSize)
 
     private[{{packageName}}] def exception(name: String, seqid: Int, code: Int, message: String): Buf = {
       val x = new TApplicationException(code, message)
@@ -592,14 +598,16 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
       }
     }
 
+{{#hasThriftFunctions}}
     private def reply(name: String, seqid: Int, result: ThriftStruct): Buf = {
       val memoryBuffer = tlReusableBuffer.get()
       try {
         val oprot = protocolFactory.getProtocol(memoryBuffer)
-
+        val start = System.nanoTime
         oprot.writeMessageBegin(new TMessage(name, TMessageType.REPLY, seqid))
         result.write(oprot)
         oprot.writeMessageEnd()
+        _root_.com.twitter.finagle.tracing.Trace.recordBinary("srv/response_serialization_ns", System.nanoTime - start)
         oprot.getTransport().flush()
 
         // make a copy of the array of bytes to construct a new buffer because memoryBuffer is reusable
@@ -608,6 +616,7 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
         tlReusableBuffer.reset()
       }
     }
+{{/hasThriftFunctions}}
 
     private object ThriftMethodStats {
       def apply(stats: StatsReceiver): ThriftMethodStats =
@@ -637,7 +646,7 @@ object {{ServiceName}} {{#withFinagle}}extends _root_.com.twitter.finagle.thrift
       if (this.serviceName == "") ex
       else {
         ex match {
-          case se: SourcedException =>
+          case se: _root_.com.twitter.finagle.SourcedException =>
             se.serviceName = this.serviceName
             se
           case _ => ex

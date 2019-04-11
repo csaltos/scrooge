@@ -161,6 +161,7 @@ trait ServiceTemplate { self: TemplateGenerator =>
           }
         )
       }),
+      "hasFunctions" -> v(service.functions.nonEmpty),
       "finagleClientFunction" -> v(templates("finagleClientFunction")),
       "withAsClosable" -> v(withAsClosable)
     )
@@ -201,7 +202,8 @@ trait ServiceTemplate { self: TemplateGenerator =>
             )
           })
         )
-      })
+      }),
+      "hasMethodServices" -> v(service.functions.nonEmpty)
     )
 
   def unwrapArgs(arity: Int): String =
@@ -318,6 +320,7 @@ trait ServiceTemplate { self: TemplateGenerator =>
           "unwrapArgs" -> v(unwrapArgs(f.args.length))
         ) + functionDictionary(f, Some("Future"))
       }),
+      "hasThriftFunctions" -> v(service.functions.nonEmpty),
       "finagleClients" -> v(
         if (withFinagle) Seq(finagleClient(service, namespace, withAsClosable)) else Seq()
       ),

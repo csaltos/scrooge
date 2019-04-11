@@ -6,15 +6,9 @@
  */
 package com.twitter.scrooge.test.gold.thriftscala
 
-import com.twitter.scrooge.{HasThriftStructCodec3, ThriftStruct, ThriftStructCodec3, ThriftStructFieldInfo, ThriftUnion, TFieldBlob, ThriftUnionFieldInfo, ValidatingThriftStruct, ValidatingThriftStructCodec3}
+import com.twitter.scrooge.{ThriftStruct, ThriftStructFieldInfo, ThriftUnion, TFieldBlob, ThriftUnionFieldInfo, ValidatingThriftStruct, ValidatingThriftStructCodec3}
 import org.apache.thrift.protocol._
-import java.nio.ByteBuffer
-import java.util.Arrays
 import scala.collection.immutable.{Map => immutable$Map}
-import scala.collection.mutable.{
-  ArrayBuffer => mutable$ArrayBuffer, Buffer => mutable$Buffer,
-  HashMap => mutable$HashMap, HashSet => mutable$HashSet}
-import scala.collection.{Map, Set}
 
 @javax.annotation.Generated(value = Array("com.twitter.scrooge.Compiler"))
 sealed trait ResponseUnion
@@ -118,8 +112,8 @@ object ResponseUnion extends ValidatingThriftStructCodec3[ResponseUnion] {
   val DetailsField: TField = new TField("details", TType.STRING, 2)
   val DetailsFieldManifest: Manifest[Details] = implicitly[Manifest[Details]]
 
-  lazy val structAnnotations: immutable$Map[String, String] =
-    immutable$Map[String, String](
+  lazy val structAnnotations: immutable$Map[java.lang.String, java.lang.String] =
+    immutable$Map[java.lang.String, java.lang.String](
         "u.annotation" -> "y"
     )
 
@@ -167,8 +161,8 @@ object ResponseUnion extends ValidatingThriftStructCodec3[ResponseUnion] {
         manifest[IdAlias],
         IdKeyTypeManifest,
         IdValueTypeManifest,
-        immutable$Map.empty[String, String],
-        immutable$Map.empty[String, String]
+        immutable$Map.empty[java.lang.String, java.lang.String],
+        immutable$Map.empty[java.lang.String, java.lang.String]
       )
   }
 
@@ -208,7 +202,7 @@ object ResponseUnion extends ValidatingThriftStructCodec3[ResponseUnion] {
         manifest[DetailsAlias],
         DetailsKeyTypeManifest,
         DetailsValueTypeManifest,
-        immutable$Map.empty[String, String],
+        immutable$Map.empty[java.lang.String, java.lang.String],
         immutable$Map(
           "u.field.annotation" -> "x"
         )
@@ -242,7 +236,7 @@ object ResponseUnion extends ValidatingThriftStructCodec3[ResponseUnion] {
   }
 
   case class UnknownUnionField private[ResponseUnion](
-      private val field: TFieldBlob)
+      field: TFieldBlob)
     extends ResponseUnion {
 
     protected type ContainedType = Unit

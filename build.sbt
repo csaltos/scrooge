@@ -6,7 +6,7 @@ import scoverage.ScoverageKeys
 // 'git checkout develop; sbt publishLocal' to publish SNAPSHOT versions of these projects.
 
 // All Twitter library releases are date versioned as YY.MM.patch
-val releaseVersion = "19.2.0-SNAPSHOT"
+val releaseVersion = "19.4.0-SNAPSHOT"
 
 lazy val versions = new {
   val slf4j = "1.7.21"
@@ -109,8 +109,8 @@ val sharedSettingsWithoutScalaVersion = Seq(
 val sharedSettings =
   sharedSettingsWithoutScalaVersion ++
   Seq(
-    scalaVersion := "2.12.7",
-    crossScalaVersions := Seq("2.11.12", "2.12.7"),
+    scalaVersion := "2.12.8",
+    crossScalaVersions := Seq("2.11.12", "2.12.8"),
     scalacOptions := Seq(
       "-deprecation",
       "-unchecked",
@@ -146,8 +146,8 @@ val settingsWithTwoTen =
 val settingsCrossCompiledWithTwoTen =
   sharedSettingsWithoutScalaVersion ++
   Seq(
-    crossScalaVersions := Seq("2.10.6", "2.11.12", "2.12.6"),
-    scalaVersion := "2.12.6",
+    crossScalaVersions := Seq("2.10.6", "2.11.12", "2.12.8"),
+    scalaVersion := "2.12.8",
     scalacOptions := scalacTwoTenOptions,
     javacOptions ++= Seq("-source", "1.7", "-target", "1.7", "-Xlint:unchecked"),
     javacOptions in doc := Seq("-source", "1.7")

@@ -6,19 +6,12 @@
  */
 package com.twitter.scrooge.test.gold.thriftscala
 
-import com.twitter.finagle.SourcedException
 import com.twitter.finagle.{service => ctfs}
 import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
-import com.twitter.finagle.thrift.{Protocols,RichClientParam, ThriftClientRequest}
-import com.twitter.scrooge.{TReusableBuffer, ThriftStruct, ThriftStructCodec}
-import com.twitter.util.{Future, Return, Throw, Throwables}
-import java.nio.ByteBuffer
-import java.util.Arrays
-import org.apache.thrift.protocol._
+import com.twitter.finagle.thrift.{Protocols, RichClientParam, ThriftClientRequest}
+import com.twitter.util.Future
 import org.apache.thrift.TApplicationException
-import org.apache.thrift.transport.TMemoryInputTransport
-import scala.collection.{Map, Set}
-import scala.language.higherKinds
+import org.apache.thrift.protocol._
 
 
 @javax.annotation.Generated(value = Array("com.twitter.scrooge.Compiler"))
@@ -61,9 +54,10 @@ class GoldService$FinagleClient(
   private[this] def protocolFactory: TProtocolFactory = clientParam.restrictedProtocolFactory
   private[this] def maxReusableBufferSize: Int = clientParam.maxThriftBufferSize
 
-  private[this] val tlReusableBuffer = TReusableBuffer(maxThriftBufferSize = maxReusableBufferSize)
+  private[this] val tlReusableBuffer: _root_.com.twitter.scrooge.TReusableBuffer =
+    _root_.com.twitter.scrooge.TReusableBuffer(maxThriftBufferSize = maxReusableBufferSize)
 
-  protected def encodeRequest(name: String, args: ThriftStruct) = {
+  protected def encodeRequest(name: String, args: _root_.com.twitter.scrooge.ThriftStruct): ThriftClientRequest = {
     val memoryBuffer = tlReusableBuffer.get()
     try {
       val oprot = protocolFactory.getProtocol(memoryBuffer)
@@ -72,20 +66,29 @@ class GoldService$FinagleClient(
       args.write(oprot)
       oprot.writeMessageEnd()
       oprot.getTransport().flush()
-      val bytes = Arrays.copyOfRange(memoryBuffer.getArray(), 0, memoryBuffer.length())
+      val bytes = _root_.java.util.Arrays.copyOfRange(
+        memoryBuffer.getArray(),
+        0,
+        memoryBuffer.length()
+      )
       new ThriftClientRequest(bytes, false)
     } finally {
       tlReusableBuffer.reset()
     }
   }
 
-  protected def decodeResponse[T <: ThriftStruct](resBytes: Array[Byte], codec: ThriftStructCodec[T]) = {
-    val iprot = protocolFactory.getProtocol(new TMemoryInputTransport(resBytes))
+  protected def decodeResponse[T <: _root_.com.twitter.scrooge.ThriftStruct](
+    resBytes: Array[Byte],
+    codec: _root_.com.twitter.scrooge.ThriftStructCodec[T]
+  ): T = {
+    val iprot = protocolFactory.getProtocol(
+      new org.apache.thrift.transport.TMemoryInputTransport(resBytes)
+    )
     val msg = iprot.readMessageBegin()
     try {
       if (msg.`type` == TMessageType.EXCEPTION) {
         val exception = TApplicationException.readFrom(iprot) match {
-          case sourced: SourcedException =>
+          case sourced: _root_.com.twitter.finagle.SourcedException =>
             if (serviceName != "") sourced.serviceName = serviceName
             sourced
           case e => e
@@ -99,7 +102,7 @@ class GoldService$FinagleClient(
     }
   }
 
-  protected def missingResult(name: String) = {
+  protected def missingResult(name: String): TApplicationException = {
     new TApplicationException(
       TApplicationException.MISSING_RESULT,
       name + " failed: unknown result"
@@ -110,7 +113,7 @@ class GoldService$FinagleClient(
     if (this.serviceName == "") ex
     else {
       ex match {
-        case se: SourcedException =>
+        case se: _root_.com.twitter.finagle.SourcedException =>
           se.serviceName = this.serviceName
           se
         case _ => ex
@@ -122,7 +125,7 @@ class GoldService$FinagleClient(
   private[this] def stats: StatsReceiver = clientParam.clientStats
   private[this] def responseClassifier: ctfs.ResponseClassifier = clientParam.responseClassifier
 
-  private[this] val scopedStats = if (serviceName != "") stats.scope(serviceName) else stats
+  private[this] val scopedStats: StatsReceiver = if (serviceName != "") stats.scope(serviceName) else stats
   private[this] object __stats_doGreatThings {
     val RequestsCounter = scopedStats.scope("doGreatThings").counter("requests")
     val SuccessCounter = scopedStats.scope("doGreatThings").counter("success")
@@ -154,7 +157,10 @@ class GoldService$FinagleClient(
       _root_.com.twitter.finagle.thrift.Headers.Request.Key,
       _root_.com.twitter.finagle.thrift.Headers.Request.newValues
     ) {
+      serdeCtx.rpcName("doGreatThings")
+      val start = System.nanoTime
       val serialized = encodeRequest("doGreatThings", inputArgs)
+      serdeCtx.serializationTime(System.nanoTime - start)
       this.service(serialized).flatMap { response =>
         Future.const(serdeCtx.deserialize(response))
       }.respond { response =>
@@ -167,9 +173,10 @@ class GoldService$FinagleClient(
           case ctfs.ResponseClass.Failed(_) =>
             __stats_doGreatThings.FailuresCounter.incr()
             response match {
-              case Throw(ex) =>
+              case _root_.com.twitter.util.Throw(ex) =>
                 setServiceName(ex)
-                __stats_doGreatThings.FailuresScope.counter(Throwables.mkString(ex): _*).incr()
+                __stats_doGreatThings.FailuresScope.counter(
+                  _root_.com.twitter.util.Throwables.mkString(ex): _*).incr()
               case _ =>
             }
         }
